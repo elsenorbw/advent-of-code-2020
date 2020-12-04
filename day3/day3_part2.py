@@ -161,7 +161,12 @@ def load_forest(filename: str) -> Forest:
 
 
 def count_trees_on_journey(
-    forest: Forest, start_x: int, start_y: int, x_increment: int, y_increment: int
+    forest: Forest,
+    start_x: int,
+    start_y: int,
+    x_increment: int,
+    y_increment: int,
+    print_steps: bool = False,
 ) -> int:
     """
     Count the number of trees which would be hit on any given path through the forest
@@ -170,6 +175,8 @@ def count_trees_on_journey(
     x = start_x
     y = start_y
     while y < forest.height():
+        if print_steps:
+            print(f"Location {x},{y} - {forest.is_tree(x, y)}")
         # is this a tree ?
         if forest.is_tree(x, y):
             tree_count += 1
@@ -188,7 +195,7 @@ def count_trees_on_journey(
 # Right 7, down 1.
 # Right 1, down 2.
 
-filename = "input.txt"
+filename = "sample.txt"
 
 forest = load_forest(filename)
 forest.print()
@@ -201,3 +208,5 @@ for x_increment, y_increment in slopes_to_try:
     print(
         f"we hit {tree_count} trees for trajectory {x_increment}, {y_increment} ({accumulator})"
     )
+
+tree_count = count_trees_on_journey(forest, 0, 0, 5, 1, print_steps=True)
