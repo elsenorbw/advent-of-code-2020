@@ -1,0 +1,138 @@
+# --- Day 25: Combo Breaker ---
+# You finally reach the check-in desk. Unfortunately, their registration systems are currently offline, and they cannot check you in. Noticing the look on your face,
+# they quickly add that tech support is already on the way! They even created all the room keys this morning; you can take yours now and give them your room deposit
+# once the registration system comes back online.
+#
+# The room key is a small RFID card. Your room is on the 25th floor and the elevators are also temporarily out of service, so it takes what little energy you have
+# left to even climb the stairs and navigate the halls. You finally reach the door to your room, swipe your card, and - beep - the light turns red.
+#
+# Examining the card more closely, you discover a phone number for tech support.
+#
+# "Hello! How can we help you today?" You explain the situation.
+#
+# "Well, it sounds like the card isn't sending the right command to unlock the door. If you go back to the check-in desk, surely someone there can reset it for you."
+# Still catching your breath, you describe the status of the elevator and the exact number of stairs you just had to climb.
+#
+# "I see! Well, your only other option would be to reverse-engineer the cryptographic handshake the card does with the door and then inject your own commands into the
+# data stream, but that's definitely impossible." You thank them for their time.
+#
+# Unfortunately for the door, you know a thing or two about cryptographic handshakes.
+#
+# The handshake used by the card and the door involves an operation that transforms a subject number. To transform a subject number, start with the value 1. Then,
+# a number of times called the loop size, perform the following steps:
+#
+# Set the value to itself multiplied by the subject number.
+# Set the value to the remainder after dividing the value by 20201227.
+# The card always uses a specific, secret loop size when it transforms a subject number. The door always uses a different, secret loop size.
+#
+# The cryptographic handshake works like this:
+#
+# The card transforms the subject number of 7 according to the card's secret loop size. The result is called the card's public key.
+# The door transforms the subject number of 7 according to the door's secret loop size. The result is called the door's public key.
+# The card and door use the wireless RFID signal to transmit the two public keys (your puzzle input) to the other device. Now, the card has the door's public key,
+# and the door has the card's public key. Because you can eavesdrop on the signal, you have both public keys, but neither device's loop size.
+# The card transforms the subject number of the door's public key according to the card's loop size. The result is the encryption key.
+# The door transforms the subject number of the card's public key according to the door's loop size. The result is the same encryption key as the card calculated.
+# If you can use the two public keys to determine each device's loop size, you will have enough information to calculate the secret encryption key that the card and
+# door use to communicate; this would let you send the unlock command directly to the door!
+#
+# For example, suppose you know that the card's public key is 5764801. With a little trial and error, you can work out
+# that the card's loop size must be 8, because transforming the initial subject number of 7 with a loop size of 8 produces 5764801.
+#
+# Then, suppose you know that the door's public key is 17807724. By the same process, you can determine that the door's loop size is 11, because
+# transforming the initial subject number of 7 with a loop size of 11 produces 17807724.
+#
+# At this point, you can use either device's loop size with the other device's public key to calculate the encryption key.
+# Transforming the subject number of 17807724 (the door's public key) with a loop size of 8 (the card's loop size) produces the encryption key, 14897079.
+# (Transforming the subject number of 5764801 (the card's public key) with a loop size of 11 (the door's loop size) produces the same encryption key: 14897079.)
+#
+# What encryption key is the handshake trying to establish?
+#
+
+
+class CryptoThing:
+    def __init__(self, loop_size):
+        self.loop_size = loop_size
+        self.private_key = None
+        self.public_key = None
+        self.generate_public_key()
+        self.encryption_key = None
+
+    def __repr__(self):
+        s = f"CryptoThing<loop_size={self.loop_size}, public_key={self.public_key}, encryption_key={self.encryption_key}>"
+        return s
+
+    def generate_public_key(self, subject_number=7):
+        if self.public_key is None:
+            # generate the public key
+            the_value = 1
+            for this_iteration in range(self.loop_size):
+                the_value *= subject_number
+                the_value = the_value % 20201227
+            self.public_key = the_value
+
+        return self.public_key
+
+    def generate_encryption_key(self, other_public_key):
+        the_value = 1
+        for this_iteration in range(self.loop_size):
+            the_value *= other_public_key
+            the_value = the_value % 20201227
+        self.encryption_key = the_value
+        return self.encryption_key
+
+
+card = CryptoThing(loop_size=8)
+door = CryptoThing(loop_size=11)
+
+card.generate_encryption_key(door.public_key)
+door.generate_encryption_key(card.public_key)
+
+print(f"Card: {card}")
+print(f"Door: {door}")
+
+
+def find_crypto_device_from_pk(target_pks, subject_number=7):
+
+    result = dict()
+    loop_size = 0
+    the_value = 1
+    while len(target_pks) > 0:
+
+        # we still have one or more to find..
+        the_value *= subject_number
+        the_value = the_value % 20201227
+        loop_size += 1
+
+        # is this one of them ?
+        if the_value in target_pks:
+            # found one..
+            result[loop_size] = the_value
+            print(f"{loop_size} -> {the_value}")
+
+            # no longer looking..
+            target_pks.remove(the_value)
+
+    return result
+
+
+#
+#  Find out the device loops which generate:
+#  - 11404017
+#  - 13768789
+#
+card_public_key = 11404017
+door_public_key = 13768789
+answers = find_crypto_device_from_pk(
+    {card_public_key, door_public_key}, subject_number=7
+)
+print(answers)
+
+card = CryptoThing(11710225)
+door = CryptoThing(8516638)
+
+card.generate_encryption_key(door.public_key)
+door.generate_encryption_key(card.public_key)
+
+print(f"Door: {door}")
+print(f"Card: {card}")
